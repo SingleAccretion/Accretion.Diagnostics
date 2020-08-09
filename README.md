@@ -1,6 +1,6 @@
 ## Accretion.Diagnostics
 
-A repository of various dignostic tools.
+A repository of various diagnostic tools.
 
 ## Accretion.Diagnostics.FanctDebug
 
