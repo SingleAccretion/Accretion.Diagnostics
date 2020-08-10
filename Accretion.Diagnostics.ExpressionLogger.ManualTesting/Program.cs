@@ -11,7 +11,23 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             Console.WriteLine("Hello World!");
             Console.WriteLine(IsEmpty(new int[] { }));
 
+            1.Log();
+
+            new object().Log();
+
+            object kek = null;
+            kek.Log();
+
+            ConsoleColor.Black.ToString().Log();
+            ConsoleColor.Black.ToString()?.Log();
+
             Console.WriteLine(new Action(() => Console.WriteLine(10)));
+
+            foreach (ConsoleColor color in Enum.GetValues(typeof(ConsoleColor)))
+            {
+                Console.ForegroundColor = color;
+                Console.WriteLine($"This is {Enum.GetName(typeof(ConsoleColor), color)}");
+            }
         }
 
         public static bool IsEmpty(Array array)

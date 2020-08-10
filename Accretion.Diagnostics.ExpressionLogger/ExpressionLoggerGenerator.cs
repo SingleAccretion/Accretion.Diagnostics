@@ -65,11 +65,12 @@ namespace Accretion.Diagnostics.ExpressionLogger
         {
             var builder = new CodeBuilder();
             builder.AppendLine("using System;");
+            builder.AppendLine("using System.IO;");
             builder.AppendLine("using System.Runtime.CompilerServices;");
             builder.OpenScope($"namespace {ExpressionLoggerClassNamespace}");
             builder.OpenScope($"public static class {ExpressionLoggerClassName}");
 
-            builder.OpenScope($"public static T {LogMethodName}<T>(T expression, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string filePath = null, [CallerMemberName] string memberName = null)");
+            builder.OpenScope($"public static T {LogMethodName}<T>(this T expression, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string filePath = null, [CallerMemberName] string memberName = null)");
             logMethodGenerator?.Invoke(builder);
             builder.CloseScope();
 
@@ -83,53 +84,59 @@ namespace Accretion.Diagnostics.ExpressionLogger
         {
             if (fancyDebugUsages.Any())
             {
-                builder.AppendLine("ConsoleColor color;");
+                builder.OpenScope("void LogToConsole(string expressionDefinition)");
+                
+                builder.AppendLine("var color = Console.ForegroundColor;");
+                builder.AppendLine("Console.ForegroundColor = ConsoleColor.DarkGray;");
+                builder.AppendLine("Console.Write(\"[\");");
+                builder.AppendLine($"Console.Write(Path.GetFileName(filePath));");
+                builder.AppendLine("Console.Write(\":\");");
+                builder.AppendLine("Console.Write(lineNumber);");
+                builder.AppendLine("Console.Write(\" \");");
+                builder.AppendLine("Console.Write(\"(\");");
+                builder.AppendLine("Console.Write(memberName);");
+                builder.AppendLine("Console.Write(\")\");");
+                builder.AppendLine("Console.Write(\"]\");");
+
+                builder.AppendLine("Console.Write(\" \");");
+
+                builder.AppendLine("Console.ForegroundColor = ConsoleColor.Cyan;");
+                builder.AppendLine($"Console.Write(expressionDefinition);");
+
+                builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
+                builder.AppendLine("Console.Write(\" = \");");
+
+                builder.AppendLine("Console.ForegroundColor = ConsoleColor.Green;");
+
+                builder.OpenScope("if (Equals(expression, null))");
+                builder.AppendLine("Console.Write(\"null\");");
+                builder.CloseScope();
+
+                builder.OpenScope("else");
+                builder.AppendLine("Console.Write(expression);");
+                builder.AppendLine("Console.Write(\" \");");
+                builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
+                builder.AppendLine("Console.Write(\"(\");");
+                builder.AppendLine("Console.ForegroundColor = ConsoleColor.DarkCyan;");
+                builder.AppendLine("Console.Write(expression.GetType());");
+                builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
+                builder.AppendLine("Console.Write(\")\");");
+                builder.CloseScope();
+
+                builder.AppendLine("Console.ForegroundColor = color;");
+                builder.AppendLine("Console.WriteLine();");
+
+                builder.CloseScope();
+
                 builder.OpenScope("switch ((lineNumber, filePath))");
 
                 foreach (var usage in fancyDebugUsages)
                 {
                     var pathLiteral = EscapedString(usage.FilePath);
-                    var fileNameLiteral = EscapedString(Path.GetFileName(usage.FilePath));
                     var expressionDefinitionLiteral = EscapedString(usage.Expression);
 
                     builder.AppendLine($"case ({usage.LineNumber}, {pathLiteral}):");
-
-                    builder.AppendLine("color = Console.ForegroundColor;");
-                    builder.AppendLine("Console.ForegroundColor = ConsoleColor.Gray;");
-                    builder.AppendLine("Console.Write(\"[\");");
-                    builder.AppendLine($"Console.Write({fileNameLiteral});");
-                    builder.AppendLine("Console.Write(\":\");");
-                    builder.AppendLine("Console.Write(lineNumber);");
-                    builder.AppendLine("Console.Write(\" \");");
-                    builder.AppendLine("Console.Write(\"(\");");
-                    builder.AppendLine("Console.Write(memberName);");
-                    builder.AppendLine("Console.Write(\")\");");
-                    builder.AppendLine("Console.Write(\"]\");");
-
-                    builder.AppendLine("Console.Write(\" \");");
-
-                    builder.AppendLine("Console.ForegroundColor = ConsoleColor.Cyan;");
-                    builder.AppendLine($"Console.Write({expressionDefinitionLiteral});");
-
-                    builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
-                    builder.AppendLine("Console.Write(\" = \");");
-
-                    builder.AppendLine("Console.ForegroundColor = ConsoleColor.Blue;");
-                    builder.AppendLine("Console.Write(expression);");
-
-                    builder.AppendLine("Console.Write(\" \");");
-
-                    builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
-                    builder.AppendLine("Console.Write(\"(\");");
-                    builder.AppendLine("Console.ForegroundColor = ConsoleColor.Green;");
-                    builder.AppendLine("Console.Write(expression.GetType());");
-                    builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
-                    builder.AppendLine("Console.Write(\")\");");
-
-
-                    builder.AppendLine("Console.ForegroundColor = color;");
-                    builder.AppendLine("Console.WriteLine();");
-
+                    builder.AppendLine($"LogToConsole({expressionDefinitionLiteral});");
                     builder.AppendLine("break;");
                 }
 
@@ -139,7 +146,6 @@ namespace Accretion.Diagnostics.ExpressionLogger
             builder.AppendLine("return expression;");
         });
 
-        private static string EscapedString(string source) =>
-            SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(source)).ToString();
+        private static string EscapedString(string source) => SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(source ?? "null")).ToString();
     }
 }
