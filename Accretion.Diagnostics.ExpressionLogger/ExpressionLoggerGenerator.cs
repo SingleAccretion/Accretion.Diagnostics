@@ -32,7 +32,6 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
                     foreach (var usage in finder.Usages)
                     {
-                        EmitDignostic(usage.FilePath + " " + usage.Expression + " " + usage.LineNumber, context);
                         yield return usage;
                     }
                 }
