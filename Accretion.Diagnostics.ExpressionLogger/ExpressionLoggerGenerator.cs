@@ -46,9 +46,6 @@ namespace Accretion.Diagnostics.ExpressionLogger
             //Debugger.Launch();
         }
 
-        private static void EmitDignostic(string message, SourceGeneratorContext context) =>
-            context.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor(Guid.NewGuid().ToString().Substring(0, 4), "", message, "correctness", DiagnosticSeverity.Warning, true), null, new object[] { }));
-
         private static Compilation AddExpressionLoggerClassToCompilation(Compilation originalCompilation)
         {
             var languageVersion = ((CSharpParseOptions)originalCompilation.SyntaxTrees.FirstOrDefault().Options).LanguageVersion;
