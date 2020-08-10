@@ -3,13 +3,13 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 
-namespace Accretion.Diagnostics.FancyDebug
+namespace Accretion.Diagnostics.ExpressionLogger
 {
-    internal class FancyDebugUsagesFinder : CSharpSyntaxWalker
+    internal class ExpressionLoggerUsagesFinder : CSharpSyntaxWalker
     {
         private readonly SemanticModel _semanticModel;
 
-        public FancyDebugUsagesFinder(SemanticModel semanticModel) => _semanticModel = semanticModel;
+        public ExpressionLoggerUsagesFinder(SemanticModel semanticModel) => _semanticModel = semanticModel;
 
         public List<FancyDebugUsage> Usages { get; } = new List<FancyDebugUsage>();
 
@@ -19,7 +19,7 @@ namespace Accretion.Diagnostics.FancyDebug
             var symbol = symbolInfo.Symbol;
             var symbolName = symbol?.ToDisplayString();
 
-            if (symbolName?.StartsWith("Accretion.Diagnostics.FancyDebug.Fancy.Debug") is true)
+            if (symbolName?.StartsWith(ExpressionLoggerGenerator.FullyQualifiedLogMethodName) is true)
             {
                 var invocationSite = node.SyntaxTree.GetLineSpan(node.Span);
                 var expression = node.ArgumentList.Arguments.First().ToString();

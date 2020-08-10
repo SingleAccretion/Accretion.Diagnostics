@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Diagnostics;
 
-namespace Accretion.Diagnostics.FancyDebug.ManualTesting
+namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
-            Fancy.Debug(new Action(() => Console.WriteLine(10)));
+            ExpressionLogger.Log(new Action(() => Console.WriteLine(10)));
             Console.WriteLine("Hello World!");
             Console.WriteLine(IsEmpty(new int[] { }));
 
@@ -15,7 +16,7 @@ namespace Accretion.Diagnostics.FancyDebug.ManualTesting
 
         public static bool IsEmpty(Array array)
         {
-            Fancy.Debug(array.Length);
+            ExpressionLogger.Log(array.Length);
             return array.Length > 0;
         }
     }

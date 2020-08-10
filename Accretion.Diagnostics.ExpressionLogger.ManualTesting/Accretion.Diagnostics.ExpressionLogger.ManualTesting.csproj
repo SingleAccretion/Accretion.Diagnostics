@@ -7,9 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Accretion.Diagnostics.FancyDebug\Accretion.Diagnostics.FancyDebug.csproj" 
-                      OutputItemType="Analyzer" 
-                      ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Accretion.Diagnostics.ExpressionLogger\Accretion.Diagnostics.ExpressionLogger.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Accretion.Diagnostics.FancyDebug
+namespace Accretion.Diagnostics.ExpressionLogger
 {
     internal struct CodeBuilder
     {
