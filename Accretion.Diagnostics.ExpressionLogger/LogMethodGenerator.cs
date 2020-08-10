@@ -1,18 +1,23 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
 
 namespace Accretion.Diagnostics.ExpressionLogger
 {
     internal class LogMethodGenerator : CSharpSyntaxWalker
     {
+        private readonly Action<Diagnostic> _reportDiagnostic;
         private readonly Compilation _compilation;
         private readonly CodeBuilder _builder;
+
+        private LogMethodUsage _lastDetectedLogMethodUsage;
         private SemanticModel _semanticModel;
         
-        public LogMethodGenerator(Compilation compilation, CodeBuilder builder)
+        public LogMethodGenerator(Action<Diagnostic> reportDiagnostic, Compilation compilation, CodeBuilder builder)
         {
+            _reportDiagnostic = reportDiagnostic;
             _compilation = compilation;
             _builder = builder;
         }
@@ -42,9 +47,9 @@ namespace Accretion.Diagnostics.ExpressionLogger
                 method.Name == LogMethodName)
             {
                 var expression = ExtractLoggedExpressionFromInvocation(node);
-                var invocationSite = node.SyntaxTree.GetLineSpan(node.Span);
+                var location = node.GetLocation();
 
-                GenerateLogCase(new LogMethodUsage(expression, invocationSite.Path, invocationSite.StartLinePosition.Line + 1));
+                GenerateLogCase(new LogMethodUsage(expression, location));
             }
 
             base.VisitInvocationExpression(node);
@@ -79,13 +84,9 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.AppendLine($"Console.Write(Path.GetFileName(filePath));");
             _builder.AppendLine("Console.Write(\":\");");
             _builder.AppendLine($"Console.Write({LineNumberParameterName});");
-            _builder.AppendLine("Console.Write(\" \");");
-            _builder.AppendLine("Console.Write(\"(\");");
+            _builder.AppendLine("Console.Write(\" (\");");
             _builder.AppendLine($"Console.Write({MemberNameParameterName});");
-            _builder.AppendLine("Console.Write(\")\");");
-            _builder.AppendLine("Console.Write(\"]\");");
-
-            _builder.AppendLine("Console.Write(\" \");");
+            _builder.AppendLine("Console.Write(\")] \");");
 
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.Cyan;");
             _builder.AppendLine($"Console.Write(expressionDefinition);");
@@ -118,12 +119,20 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         private void GenerateLogCase(LogMethodUsage usage)
         {
+            if (_lastDetectedLogMethodUsage == usage)
+            {
+                _reportDiagnostic(Diagnostics.DuplicateLogUsage(usage.Location));
+                return;
+            }
+
             var pathLiteral = usage.FilePath.AsLiteral();
             var expressionDefinitionLiteral = usage.Expression.AsLiteral();
 
             _builder.AppendLine($"case ({usage.LineNumber}, {pathLiteral}):");
             _builder.AppendLine($"LogToConsole({expressionDefinitionLiteral});");
             _builder.AppendLine("break;");
+
+            _lastDetectedLogMethodUsage = usage;
         }
     }
 }

@@ -1,19 +1,25 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis;
+using System;
 
 namespace Accretion.Diagnostics.ExpressionLogger
 {
     internal readonly struct LogMethodUsage : IEquatable<LogMethodUsage>
     {
-        public LogMethodUsage(string expressionDefinition, string filePath, int lineNumber)
+        public LogMethodUsage(string expressionDefinition, Location location)
         {
+            var span = location.GetLineSpan();
+            FilePath = span.Path;
+            LineNumber = span.StartLinePosition.Line + 1;
+
             Expression = expressionDefinition;
-            FilePath = filePath;
-            LineNumber = lineNumber;
+            Location = location;
         }
 
-        public string Expression { get; }
         public string FilePath { get; }
         public int LineNumber { get; }
+
+        public string Expression { get; }
+        public Location Location { get; }
 
         public override bool Equals(object obj) => obj is LogMethodUsage usage && Equals(usage);
 

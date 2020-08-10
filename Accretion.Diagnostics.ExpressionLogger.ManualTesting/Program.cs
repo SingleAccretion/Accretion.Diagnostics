@@ -10,7 +10,8 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 
             IsEmpty(new int[] { });
 
-            1.Log();
+            1.Log(); 
+            2.Log();
 
             new object().Log();
 

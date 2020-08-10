@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
@@ -14,7 +15,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
         public void Execute(SourceGeneratorContext context)
         {
             var compilation = AddExpressionLoggerClassToCompilation(context.Compilation);
-            var logMethodSource = GenerateExpressionLoggerClassSource(bulder => new LogMethodGenerator(compilation, bulder).GenerateLogMethodBody());
+            var logMethodSource = GenerateExpressionLoggerClassSource(bulder => new LogMethodGenerator(d => context.ReportDiagnostic(d), compilation, bulder).GenerateLogMethodBody());
             context.AddSource("ExpressionLogger.cs", logMethodSource);
         }
 

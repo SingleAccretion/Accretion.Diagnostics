@@ -4,10 +4,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
 {
     internal struct CodeBuilder
     {
-        public const string Indent = "    ";
-
         private StringBuilder _builder;
-        private string _indent;
 
         private StringBuilder Builder => _builder ??= new StringBuilder();
 
@@ -15,21 +12,16 @@ namespace Accretion.Diagnostics.ExpressionLogger
         {
             AppendLine(header);
             AppendLine("{");
-            _indent += Indent;
         }
 
         public void CloseScope()
         {
-            if (_indent.Length >= Indent.Length)
-            {
-                _indent = _indent.Substring(0, _indent.Length - Indent.Length);
-            }
             AppendLine("}");
         }
 
         public void AppendLine(string line)
         {
-            Builder.AppendLine(_indent);
+            Builder.AppendLine();
             Builder.Append(line);
         }
 
