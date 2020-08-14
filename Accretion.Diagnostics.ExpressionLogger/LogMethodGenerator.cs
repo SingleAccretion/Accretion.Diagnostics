@@ -157,7 +157,8 @@ namespace Accretion.Diagnostics.ExpressionLogger
             static string PrettyValueString(object value) => value switch
             {
                 null => "null",
-                string s => s,
+                char ch => $"'{ch}'",
+                string s => $@"""{s}""",
                 IEnumerable list => list.Cast<object>().Any() ? "{ " + string.Join(", ", list.Cast<object>().Select(x => PrettyValueString(x))) + " }" : "{ }",
                 //Type type => PrettyTypeName(type),
                 //_ when value.ToString() == value.GetType().FullName => PrettyTypeName(value.GetType()),
@@ -167,7 +168,8 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
             _builder.OpenScope("static string PrettyValueString(object value) => value switch");
             _builder.AppendLine("null => \"null\",");
-            _builder.AppendLine("string s => s,");
+            _builder.AppendLine("char ch => $\"'{ch}'\",");
+            _builder.AppendLine("string s => $@\"\"\"{s}\"\"\",");
             _builder.AppendLine("IEnumerable list => list.Cast<object>().Any() ? \"{ \" + string.Join(\", \", list.Cast<object>().Select(x => PrettyValueString(x))) + \" }\" : \"{ }\",");
             _builder.AppendLine($"Type type => {PrettyTypeNameMethodName}(type),");
             _builder.AppendLine($"_ when value.ToString() == value.GetType().ToString() => {PrettyTypeNameMethodName}(value.GetType()),");
