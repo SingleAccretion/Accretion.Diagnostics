@@ -46,5 +46,12 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
     public static class Generic<T>
     {
         public static T Get() => default;
+
+        public static Z GetZ<Z>()
+        {
+            default(IEnumerable<Z>).Log(); 
+            default(Z[]).Log(); 
+            return default(Z).Log();
+        }
     }
 }

@@ -162,8 +162,9 @@ namespace Accretion.Diagnostics.ExpressionLogger
             {
                 for (int i = 0; i < usages.Count; i++)
                 {
-                    _builder.OpenScope($"if (typeof({usages[i].Type}) == typeof(T))");
-                    _builder.AppendLine($"LogToConsole({usages[i].Expression.AsLiteral()});");
+                    var usage = usages[i];
+                    _builder.OpenScope($"if (typeof({usage.Type}) == typeof(T))");
+                    _builder.AppendLine($"LogToConsole({usage.Expression.AsLiteral()});");
                     _builder.AppendLine("break;");
                     _builder.CloseScope();
                 }
