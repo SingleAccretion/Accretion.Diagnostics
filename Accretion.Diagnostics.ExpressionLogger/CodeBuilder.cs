@@ -14,9 +14,9 @@ namespace Accretion.Diagnostics.ExpressionLogger
             AppendLine("{");
         }
 
-        public void CloseScope()
+        public void CloseScope(string footer = "")
         {
-            AppendLine("}");
+            AppendLine("}" + footer);
         }
 
         public void AppendLine(string line)

@@ -6,7 +6,7 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 {
     public class Program
     {
-        public static void Main()
+        public static unsafe void Main()
         {
             ExpressionLogger.Log(new Action(() => Console.WriteLine(10)));
 
@@ -15,7 +15,8 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             new List<int>().Log(); new List<double>().Log();
 
             new Task<IEnumerable<IReadOnlyCollection<object>>>(() => default).Log();
-            
+            new Dictionary<ValueTask<int>[], KeyValuePair<List<List<int>[]>, double>>().Log();
+
             1.Log();
             2.Log(); 2.0f.Log(); 3.0.Log();
 
@@ -49,9 +50,15 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 
         public static Z GetZ<Z>()
         {
-            default(IEnumerable<Z>).Log(); 
-            default(Z[]).Log(); 
+            default(IEnumerable<Z>).Log();
+            default(Z[]).Log();
             return default(Z).Log();
         }
+    }
+
+    public struct Unmanaged<T, U> where T : unmanaged where U : unmanaged
+    {
+        public T TValue { get; }
+        public U UValue { get; }
     }
 }

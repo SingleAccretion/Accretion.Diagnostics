@@ -4,8 +4,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
 
 namespace Accretion.Diagnostics.ExpressionLogger
@@ -36,7 +34,6 @@ namespace Accretion.Diagnostics.ExpressionLogger
                 _semanticModel = _compilation.GetSemanticModel(tree);
                 Visit(tree.GetRoot());
             }
-            //"Flush" the queue and write out the cases on the last line
             GenerateEnqueuedLogCases();
             _builder.CloseScope();
 
@@ -82,6 +79,8 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         private void GenerateLogToConsoleMethod()
         {
+            GeneratePrettyTypeNameMethod();
+
             _builder.OpenScope("void LogToConsole(string expressionDefinition)");
 
             _builder.AppendLine("var color = Console.ForegroundColor;");
@@ -112,7 +111,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
             _builder.AppendLine("Console.Write(\"(\");");
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.DarkCyan;");
-            _builder.AppendLine($"Console.Write({ExpressionParameterName}.GetType().Name);");
+            _builder.AppendLine($"Console.Write(PrettyTypeName({ExpressionParameterName}.GetType()));");
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
             _builder.AppendLine("Console.Write(\")\");");
             _builder.CloseScope();
@@ -121,6 +120,30 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.AppendLine("Console.WriteLine();");
 
             _builder.CloseScope();
+        }
+
+        private void GeneratePrettyTypeNameMethod()
+        {
+            /*
+            static string PrettyTypeName(Type type) => type switch
+            {
+                { IsArray: true } => $"{PrettyTypeName(type.GetElementType())}[]",
+                { IsPointer: true } => $"{PrettyTypeName(type.GetElementType())}*",
+                { IsByRef: true } => $"{PrettyTypeName(type.GetElementType())}&",
+                { IsGenericType: true } => $"{type.Name.Remove(type.Name.IndexOf('`'))}<{string.Join(", ", type.GenericTypeArguments.Select(x => PrettyTypeName(x)))}>",
+                _ => type.Name
+            };
+            */
+
+            _builder.OpenScope("static string PrettyTypeName(Type type) => type switch");
+
+            _builder.AppendLine("{ IsArray: true } => $\"{ PrettyTypeName(type.GetElementType())}[]\",");
+            _builder.AppendLine("{ IsPointer: true } => $\"{ PrettyTypeName(type.GetElementType())}*\",");
+            _builder.AppendLine("{ IsByRef: true } => $\"{ PrettyTypeName(type.GetElementType())}&\",");
+            _builder.AppendLine("{ IsGenericType: true } => $\"{type.Name.Remove(type.Name.IndexOf('`'))}<{string.Join(\", \", type.GenericTypeArguments.Select(x => PrettyTypeName(x)))}>\",");
+            _builder.AppendLine("_ => type.Name");
+
+            _builder.CloseScope(";");
         }
 
         private void QueueLogCaseGeneration(LogMethodUsage usage)
