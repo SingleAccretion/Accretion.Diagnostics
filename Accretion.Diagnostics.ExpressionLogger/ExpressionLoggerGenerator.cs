@@ -41,6 +41,8 @@ namespace Accretion.Diagnostics.ExpressionLogger
             builder.AppendLine("using System;");
             builder.AppendLine("using System.IO;");
             builder.AppendLine("using System.Linq;");
+            builder.AppendLine("using System.Collections;");
+            builder.AppendLine("using System.Collections.Generic;");
             builder.AppendLine("using System.Runtime.CompilerServices;");
             builder.OpenScope($"namespace {ExpressionLoggerClassNamespace}");
             builder.OpenScope($"public static class {ExpressionLoggerClassName}");

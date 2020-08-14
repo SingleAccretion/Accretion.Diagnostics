@@ -14,6 +14,9 @@ namespace Accretion.Diagnostics.ExpressionLogger
         public const string FilePathParameterName = "filePath";
         public const string MemberNameParameterName = "member";
 
+        public const string PrettyTypeNameMethodName = "PrettyTypeName";
+        public const string PrettyValueStringMethodName = "PrettyValueString";
+
         public static string AsLiteral(this string source) => 
             SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(source ?? "null")).ToString();
     }

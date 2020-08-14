@@ -21,6 +21,10 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             2.Log(); 2.0f.Log(); 3.0.Log();
 
             new object().Log();
+            new int[] { 1, 2, 3 }.Log();
+            
+            new int?(10).Log();
+            new int?[] { 1, 2, 3 }.Log();
 
             object kek = null;
             kek.Log();

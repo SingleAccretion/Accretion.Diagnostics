@@ -2,6 +2,8 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
@@ -80,6 +82,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
         private void GenerateLogToConsoleMethod()
         {
             GeneratePrettyTypeNameMethod();
+            GeneratePrettyValueStringMethod();
 
             _builder.OpenScope("void LogToConsole(string expressionDefinition)");
 
@@ -106,12 +109,12 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.CloseScope();
 
             _builder.OpenScope("else");
-            _builder.AppendLine($"Console.Write({ExpressionParameterName});");
+            _builder.AppendLine($"Console.Write({PrettyValueStringMethodName}({ExpressionParameterName}));");
             _builder.AppendLine("Console.Write(\" \");");
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
             _builder.AppendLine("Console.Write(\"(\");");
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.DarkCyan;");
-            _builder.AppendLine($"Console.Write(PrettyTypeName({ExpressionParameterName}.GetType()));");
+            _builder.AppendLine($"Console.Write({PrettyTypeNameMethodName}({ExpressionParameterName}.GetType()));");
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
             _builder.AppendLine("Console.Write(\")\");");
             _builder.CloseScope();
@@ -130,19 +133,43 @@ namespace Accretion.Diagnostics.ExpressionLogger
                 { IsArray: true } => $"{PrettyTypeName(type.GetElementType())}[]",
                 { IsPointer: true } => $"{PrettyTypeName(type.GetElementType())}*",
                 { IsByRef: true } => $"{PrettyTypeName(type.GetElementType())}&",
+                _ when Nullable.GetUnderlyingType(type) is Type t => $"{PrettyTypeName(t)}?",
                 { IsGenericType: true } => $"{type.Name.Remove(type.Name.IndexOf('`'))}<{string.Join(", ", type.GenericTypeArguments.Select(x => PrettyTypeName(x)))}>",
                 _ => type.Name
             };
             */
 
-            _builder.OpenScope("static string PrettyTypeName(Type type) => type switch");
+            _builder.OpenScope($"static string {PrettyTypeNameMethodName}(Type type) => type switch");
 
-            _builder.AppendLine("{ IsArray: true } => $\"{ PrettyTypeName(type.GetElementType())}[]\",");
-            _builder.AppendLine("{ IsPointer: true } => $\"{ PrettyTypeName(type.GetElementType())}*\",");
-            _builder.AppendLine("{ IsByRef: true } => $\"{ PrettyTypeName(type.GetElementType())}&\",");
+            _builder.AppendLine("{ IsArray: true } => $\"{PrettyTypeName(type.GetElementType())}[]\",");
+            _builder.AppendLine("{ IsPointer: true } => $\"{PrettyTypeName(type.GetElementType())}*\",");
+            _builder.AppendLine("{ IsByRef: true } => $\"{PrettyTypeName(type.GetElementType())}&\",");
+            _builder.AppendLine("_ when Nullable.GetUnderlyingType(type) is Type t => $\"{PrettyTypeName(t)}?\",");
             _builder.AppendLine("{ IsGenericType: true } => $\"{type.Name.Remove(type.Name.IndexOf('`'))}<{string.Join(\", \", type.GenericTypeArguments.Select(x => PrettyTypeName(x)))}>\",");
             _builder.AppendLine("_ => type.Name");
 
+            _builder.CloseScope(";");
+        }
+
+        private void GeneratePrettyValueStringMethod()
+        {
+            /*
+            static string PrettyValueString(object value) => value switch
+            {
+                null => "null",
+                string s => s,
+                IEnumerable list => list.Cast<object>().Any() ? "{ " + string.Join(", ", list.Cast<object>().Select(x => PrettyValueString(x))) + " }" : "{ }",
+                //Type type => PrettyTypeName(type),
+                _ => value.ToString()
+            };
+            */
+
+            _builder.OpenScope("static string PrettyValueString(object value) => value switch");
+            _builder.AppendLine("null => \"null\",");
+            _builder.AppendLine("string s => s,");
+            _builder.AppendLine("IEnumerable list => list.Cast<object>().Any() ? \"{ \" + string.Join(\", \", list.Cast<object>().Select(x => PrettyValueString(x))) + \" }\" : \"{ }\",");
+            _builder.AppendLine($"Type type => {PrettyTypeNameMethodName}(type),");
+            _builder.AppendLine("_ => value.ToString()");
             _builder.CloseScope(";");
         }
 
