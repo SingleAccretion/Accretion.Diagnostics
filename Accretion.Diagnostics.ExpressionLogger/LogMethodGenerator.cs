@@ -2,6 +2,10 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
 
 namespace Accretion.Diagnostics.ExpressionLogger
@@ -12,16 +16,16 @@ namespace Accretion.Diagnostics.ExpressionLogger
         private readonly Compilation _compilation;
         private readonly CodeBuilder _builder;
 
-        private LogMethodUsage _lastDetectedLogMethodUsage;
+        private SameLineLogMethodUsages _sameLineLogUsages;
         private SemanticModel _semanticModel;
-        
+
         public LogMethodGenerator(Action<Diagnostic> reportDiagnostic, Compilation compilation, CodeBuilder builder)
         {
             _reportDiagnostic = reportDiagnostic;
             _compilation = compilation;
             _builder = builder;
         }
-        
+
         public void GenerateLogMethodBody()
         {
             GenerateLogToConsoleMethod();
@@ -32,8 +36,10 @@ namespace Accretion.Diagnostics.ExpressionLogger
                 _semanticModel = _compilation.GetSemanticModel(tree);
                 Visit(tree.GetRoot());
             }
+            //"Flush" the queue and write out the cases on the last line
+            GenerateEnqueuedLogCases();
             _builder.CloseScope();
-            
+
             _builder.AppendLine($"return {ExpressionParameterName};");
         }
 
@@ -49,7 +55,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
                 var expression = ExtractLoggedExpressionFromInvocation(node);
                 var location = node.GetLocation();
 
-                GenerateLogCase(new LogMethodUsage(expression, location));
+                QueueLogCaseGeneration(new LogMethodUsage(expression, method.TypeArguments[0], location));
             }
 
             base.VisitInvocationExpression(node);
@@ -81,7 +87,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.AppendLine("var color = Console.ForegroundColor;");
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.DarkGray;");
             _builder.AppendLine("Console.Write(\"[\");");
-            _builder.AppendLine($"Console.Write(Path.GetFileName(filePath));");
+            _builder.AppendLine($"Console.Write(Path.GetFileName({FilePathParameterName}));");
             _builder.AppendLine("Console.Write(\":\");");
             _builder.AppendLine($"Console.Write({LineNumberParameterName});");
             _builder.AppendLine("Console.Write(\" (\");");
@@ -106,7 +112,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
             _builder.AppendLine("Console.Write(\"(\");");
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.DarkCyan;");
-            _builder.AppendLine($"Console.Write({ExpressionParameterName}.GetType());");
+            _builder.AppendLine($"Console.Write({ExpressionParameterName}.GetType().Name);");
             _builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
             _builder.AppendLine("Console.Write(\")\");");
             _builder.CloseScope();
@@ -117,22 +123,53 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.CloseScope();
         }
 
-        private void GenerateLogCase(LogMethodUsage usage)
+        private void QueueLogCaseGeneration(LogMethodUsage usage)
         {
-            if (_lastDetectedLogMethodUsage == usage)
+            var usages = _sameLineLogUsages;
+
+            if (usages is null)
             {
-                _reportDiagnostic(Diagnostics.DuplicateLogUsage(usage.Location));
-                return;
+                _sameLineLogUsages = new SameLineLogMethodUsages(usage);
+            }
+            else if (usages.AreOnTheSameLineAs(usage))
+            {
+                if (usages.AreIndistinguishableFrom(usage))
+                {
+                    _reportDiagnostic(Diagnostics.DuplicateLogUsage(usage.Location));
+                    return;
+                }
+
+                usages.Add(usage);
+            }
+            else
+            {
+                GenerateEnqueuedLogCases();
+                usages.Rebase(usage);
+            }
+        }
+
+        private void GenerateEnqueuedLogCases()
+        {
+            var usages = _sameLineLogUsages?.Usages;
+            Debug.Assert(usages != null && usages.Any());
+
+            _builder.AppendLine($"case ({_sameLineLogUsages.LineNumber}, {_sameLineLogUsages.FilePath.AsLiteral()}):");
+            if (usages.Count == 1)
+            {
+                _builder.AppendLine($"LogToConsole({usages[0].Expression.AsLiteral()});");
+            }
+            else
+            {
+                for (int i = 0; i < usages.Count; i++)
+                {
+                    _builder.OpenScope($"if (typeof({usages[i].Type}) == typeof(T))");
+                    _builder.AppendLine($"LogToConsole({usages[i].Expression.AsLiteral()});");
+                    _builder.AppendLine("break;");
+                    _builder.CloseScope();
+                }
             }
 
-            var pathLiteral = usage.FilePath.AsLiteral();
-            var expressionDefinitionLiteral = usage.Expression.AsLiteral();
-
-            _builder.AppendLine($"case ({usage.LineNumber}, {pathLiteral}):");
-            _builder.AppendLine($"LogToConsole({expressionDefinitionLiteral});");
             _builder.AppendLine("break;");
-
-            _lastDetectedLogMethodUsage = usage;
         }
     }
 }
