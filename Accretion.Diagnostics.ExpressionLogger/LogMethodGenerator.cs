@@ -160,6 +160,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
                 string s => s,
                 IEnumerable list => list.Cast<object>().Any() ? "{ " + string.Join(", ", list.Cast<object>().Select(x => PrettyValueString(x))) + " }" : "{ }",
                 //Type type => PrettyTypeName(type),
+                //_ when value.ToString() == value.GetType().FullName => PrettyTypeName(value.GetType()),
                 _ => value.ToString()
             };
             */
@@ -169,6 +170,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.AppendLine("string s => s,");
             _builder.AppendLine("IEnumerable list => list.Cast<object>().Any() ? \"{ \" + string.Join(\", \", list.Cast<object>().Select(x => PrettyValueString(x))) + \" }\" : \"{ }\",");
             _builder.AppendLine($"Type type => {PrettyTypeNameMethodName}(type),");
+            _builder.AppendLine($"_ when value.ToString() == value.GetType().ToString() => {PrettyTypeNameMethodName}(value.GetType()),");
             _builder.AppendLine("_ => value.ToString()");
             _builder.CloseScope(";");
         }
