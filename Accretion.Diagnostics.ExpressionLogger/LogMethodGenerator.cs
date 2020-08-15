@@ -2,9 +2,6 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
 
@@ -44,6 +41,11 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
+            if (!node.ToString().Contains(LogMethodName))
+            {
+                return;
+            }
+
             var symbolInfo = _semanticModel.GetSymbolInfo(node);
 
             if (symbolInfo.Symbol is IMethodSymbol method &&
@@ -154,27 +156,70 @@ namespace Accretion.Diagnostics.ExpressionLogger
         private void GeneratePrettyValueStringMethod()
         {
             /*
-            static string PrettyValueString(object value) => value switch
+            static string PrettyValueString(object value)
             {
-                null => "null",
-                char ch => $"'{ch}'",
-                string s => $@"""{s}""",
-                IEnumerable list => list.Cast<object>().Any() ? "{ " + string.Join(", ", list.Cast<object>().Select(x => PrettyValueString(x))) + " }" : "{ }",
-                //Type type => PrettyTypeName(type),
-                //_ when value.ToString() == value.GetType().FullName => PrettyTypeName(value.GetType()),
-                _ => value.ToString()
-            };
+                static string PrettyDictionaryString(IDictionary dictionary)
+                {
+                    IEnumerable<string> Entries()
+                    {
+                        foreach (DictionaryEntry entry in dictionary)
+                        {
+                            yield return $"{PrettyValueString(entry.Key)}: {PrettyValueString(entry)}";
+                        }
+                    }
+
+                    return string.Join(", ", Entries());
+                }
+                static string PrettyEnumerableString(IEnumerable enumerable)
+                {
+                    var sequence = enumerable.Cast<object>();
+                    return sequence.Any() ? "{ " + string.Join(", ", enumerable.Cast<object>().Select(x => PrettyValueString(x))) + " }" : "{ }";
+                }
+                
+                return value switch
+                {
+                    null => "null",
+                    char ch => $"'{ch}'",
+                    string s => $@"""{s}""",
+                    //Type type => PrettyTypeName(type),
+                    IDictionary dictionary => PrettyDictionaryString(dictionary),
+                    IEnumerable enumerable => PrettyEnumerableString(enumerable),
+                    //_ when value.ToString() == value.GetType().FullName => PrettyTypeName(value.GetType()),
+                    _ => value.ToString()
+                };
+            }
             */
 
-            _builder.OpenScope("static string PrettyValueString(object value) => value switch");
+            _builder.OpenScope("static string PrettyValueString(object value)");
+
+            _builder.OpenScope("static string PrettyEnumerableString(IEnumerable enumerable, bool useDefaultToString = false)");
+            _builder.AppendLine("var sequence = enumerable.Cast<object>();");
+            _builder.AppendLine("return sequence.Any() ?");
+            _builder.AppendLine("\"{ \" + string.Join(\", \", sequence.Select(x => useDefaultToString ? x.ToString() : PrettyValueString(x))) + \" }\" :");
+            _builder.AppendLine("\"{ }\";");
+            _builder.CloseScope();
+
+            _builder.OpenScope("static string PrettyDictionaryString(IDictionary dictionary)");
+            _builder.OpenScope("IEnumerable<string> Entries()");
+            _builder.OpenScope("foreach (DictionaryEntry entry in dictionary)");
+            _builder.AppendLine("yield return $\"{PrettyValueString(entry.Key)}: {PrettyValueString(entry.Value)}\";");
+            _builder.CloseScope();
+            _builder.CloseScope();
+            _builder.AppendLine("return PrettyEnumerableString(Entries(), true);");
+            _builder.CloseScope();
+
+            _builder.OpenScope("return value switch");
             _builder.AppendLine("null => \"null\",");
             _builder.AppendLine("char ch => $\"'{ch}'\",");
             _builder.AppendLine("string s => $@\"\"\"{s}\"\"\",");
-            _builder.AppendLine("IEnumerable list => list.Cast<object>().Any() ? \"{ \" + string.Join(\", \", list.Cast<object>().Select(x => PrettyValueString(x))) + \" }\" : \"{ }\",");
             _builder.AppendLine($"Type type => {PrettyTypeNameMethodName}(type),");
+            _builder.AppendLine("IDictionary dictionary => PrettyDictionaryString(dictionary),");
+            _builder.AppendLine("IEnumerable enumerable => PrettyEnumerableString(enumerable),");
             _builder.AppendLine($"_ when value.ToString() == value.GetType().ToString() => {PrettyTypeNameMethodName}(value.GetType()),");
             _builder.AppendLine("_ => value.ToString()");
             _builder.CloseScope(";");
+
+            _builder.CloseScope();
         }
 
         private void QueueLogCaseGeneration(LogMethodUsage usage)
@@ -205,7 +250,11 @@ namespace Accretion.Diagnostics.ExpressionLogger
         private void GenerateEnqueuedLogCases()
         {
             var usages = _sameLineLogUsages?.Usages;
-            Debug.Assert(usages != null && usages.Any());
+
+            if (usages is null || !usages.Any())
+            {
+                return;
+            }
 
             _builder.AppendLine($"case ({_sameLineLogUsages.LineNumber}, {_sameLineLogUsages.FilePath.AsLiteral()}):");
             if (usages.Count == 1)

@@ -12,11 +12,13 @@ namespace Accretion.Diagnostics.ExpressionLogger
     [Generator]
     public class ExpressionLoggerGenerator : ISourceGenerator
     {
-        public void Execute(SourceGeneratorContext context)
+        public void Execute(SourceGeneratorContext context) => Execute(context.ReportDiagnostic, context.AddSource, context.Compilation);
+
+        public void Execute(Action<Diagnostic> reportDiagnostic, Action<string, SourceText> addSource, Compilation compilation)
         {
-            var compilation = AddExpressionLoggerClassToCompilation(context.Compilation);
-            var logMethodSource = GenerateExpressionLoggerClassSource(bulder => new LogMethodGenerator(d => context.ReportDiagnostic(d), compilation, bulder).GenerateLogMethodBody());
-            context.AddSource("ExpressionLogger.cs", logMethodSource);
+            compilation = AddExpressionLoggerClassToCompilation(compilation);
+            var logMethodSource = GenerateExpressionLoggerClassSource(bulder => new LogMethodGenerator(reportDiagnostic, compilation, bulder).GenerateLogMethodBody());
+            addSource("ExpressionLogger.cs", logMethodSource);
         }
 
         public void Initialize(InitializationContext context)

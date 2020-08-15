@@ -17,7 +17,6 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             new Func<IEnumerable<IReadOnlyCollection<object>>>(() => default).Log();
             new Dictionary<ValueTask<int>[], KeyValuePair<List<List<int>[]>, double>>().Log();
 
-            1.Log();
             2.Log(); 2.0f.Log(); 3.0.Log();
             new object().Log();
             new int?(10).Log();
@@ -48,7 +47,7 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 
         public static bool IsEmpty(Array array)
         {
-            array.Length.Log();
+            (array.Length > 0).Log();
             return array.Length > 0;
         }
     }
@@ -69,5 +68,4 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
     {
         public static Task<int> AsyncWait() => Task.FromResult(50);
     }
-
 }
