@@ -55,20 +55,23 @@ namespace Accretion.Diagnostics.ExpressionLogger
                 method.ContainingType.Name == ExpressionLoggerClassName &&
                 method.Name == LogMethodName)
             {
-                var expression = ExtractLoggedExpressionFromInvocation(node);
+                var expression = ExtractLoggedExpressionFromInvocation(node, out var isStaticInvocation);
                 var location = node.GetLocation();
 
-                QueueLogCaseGeneration(new LogMethodUsage(expression, method.TypeArguments[0], location));
+                QueueLogCaseGeneration(new LogMethodUsage(expression, method.TypeArguments[0], location, isStaticInvocation));
             }
 
             base.VisitInvocationExpression(node);
         }
 
-        private static string ExtractLoggedExpressionFromInvocation(InvocationExpressionSyntax invocation)
+        private static string ExtractLoggedExpressionFromInvocation(InvocationExpressionSyntax invocation, out bool isStaticInvocation)
         {
             var args = invocation.ArgumentList.Arguments;
+            isStaticInvocation = false;
+
             if (args.Count > 0)
             {
+                isStaticInvocation = true;
                 return args[0].ToString();
             }
             if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
@@ -53,6 +54,12 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             typeof(Generic<int>.NestedGenericDouble<double, float>.NestedNestedNoNGeneric).Log();
             typeof(Generic<int>.NestedGenericDouble<double, float>.NestedNestedGeneric<short>).Log();
             typeof(Generic<Generic<Generic<int>.NestedGeneric<double>>>.NestedGenericDouble<Generic<double>.NestedNoNGeneric, Generic<float>.NestedGenericDouble<byte, sbyte>.NestedNestedGeneric<int>>.NestedNestedGeneric<bool>).Log();
+
+            new[] { 1, 2, 3 }.
+                Select(x => 2 * x).Log();
+
+            ExpressionLogger.Log(new[] { 4, 5, 6 }.
+                Select(x => 2 * x));
         }
 
         public static bool IsEmpty(Array array)
@@ -61,7 +68,7 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             return array.Length > 0;
         }
     }
-    
+
     public class Generic<T>
     {
         public static T Get() => default;
@@ -79,8 +86,8 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
         }
 
         public struct NestedGeneric<U> { }
-        
-        public struct NestedGenericDouble<Z, R> 
+
+        public struct NestedGenericDouble<Z, R>
         {
             public struct NestedNestedNoNGeneric { }
             public struct NestedNestedGeneric<P> { }

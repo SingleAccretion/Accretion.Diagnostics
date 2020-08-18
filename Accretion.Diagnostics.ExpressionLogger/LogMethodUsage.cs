@@ -5,11 +5,11 @@ namespace Accretion.Diagnostics.ExpressionLogger
 {
     internal readonly struct LogMethodUsage
     {
-        public LogMethodUsage(string expressionDefinition, ITypeSymbol type, Location location)
+        public LogMethodUsage(string expressionDefinition, ITypeSymbol type, Location location, bool isPrefixedInvocation)
         {
             var span = location.GetLineSpan();
             FilePath = span.Path;
-            LineNumber = span.StartLinePosition.Line + 1;
+            LineNumber = (isPrefixedInvocation ? span.StartLinePosition.Line : span.EndLinePosition.Line) + 1;
             Type = type;
 
             Expression = expressionDefinition;
