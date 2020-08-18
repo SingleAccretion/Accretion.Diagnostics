@@ -2,7 +2,9 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
 
 namespace Accretion.Diagnostics.ExpressionLogger
@@ -129,28 +131,74 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         private void GeneratePrettyTypeNameMethod()
         {
-            /*
-            static string PrettyTypeName(Type type) => type switch
+            static string PrettyTypeName(Type type)
             {
-                { IsArray: true } => $"{PrettyTypeName(type.GetElementType())}[]",
-                { IsPointer: true } => $"{PrettyTypeName(type.GetElementType())}*",
-                { IsByRef: true } => $"{PrettyTypeName(type.GetElementType())}&",
-                _ when Nullable.GetUnderlyingType(type) is Type t => $"{PrettyTypeName(t)}?",
-                { IsGenericType: true } => $"{type.Name.Remove(type.Name.IndexOf('`'))}<{string.Join(", ", type.GenericTypeArguments.Select(x => PrettyTypeName(x)))}>",
-                _ => type.Name
-            };
-            */
+                IEnumerable<string> NestedTypes(Type child)
+                {
+                    IEnumerable<Type> EnumerateTypesChildToParent()
+                    {
+                        yield return child;
+                        while (child.DeclaringType is Type parent)
+                        {
+                            yield return parent;
+                            child = parent;
+                        }
+                    }
 
-            _builder.OpenScope($"static string {PrettyTypeNameMethodName}(Type type) => type switch");
+                    var genericArgs = child.GetGenericArguments();
+                    var argsTaken = 0;
+                    foreach (var type in EnumerateTypesChildToParent().Reverse())
+                    {
+                        var argsToTake = type.GetGenericArguments().Length - argsTaken;
+                        var args = genericArgs.Skip(argsTaken).Take(argsToTake);
 
+                        yield return Regex.Replace(type.Name, "`\\d+$", $"<{string.Join(", ", args.Select(x => PrettyTypeName(x)))}>");
+                        argsTaken += argsToTake;
+                    }
+                }
+                
+                return type switch
+                {
+                    { IsArray: true } => $"{PrettyTypeName(type.GetElementType())}[]",
+                    { IsPointer: true } => $"{PrettyTypeName(type.GetElementType())}*",
+                    { IsByRef: true } => $"{PrettyTypeName(type.GetElementType())}&",
+                    _ when Nullable.GetUnderlyingType(type) is Type t => $"{PrettyTypeName(t)}?",
+                    _ => string.Join(".", NestedTypes(type))
+                };
+            }
+
+            _builder.OpenScope($"static string {PrettyTypeNameMethodName}(Type type, bool includeParent = true)");
+
+            _builder.OpenScope("IEnumerable<string> NestedTypes(Type child)");
+            
+            _builder.OpenScope("IEnumerable<Type> EnumerateTypesChildToParent()");
+            _builder.AppendLine("yield return child;");
+            _builder.OpenScope("while (child.DeclaringType is Type parent)");
+            _builder.AppendLine("yield return parent;");
+            _builder.AppendLine("child = parent;");
+            _builder.CloseScope();
+            _builder.CloseScope();
+
+            _builder.AppendLine("var genericArgs = child.GetGenericArguments();");
+            _builder.AppendLine("var argsTaken = 0;");
+            _builder.OpenScope("foreach (var type in EnumerateTypesChildToParent().Reverse())");
+            _builder.AppendLine("var argsToTake = type.GetGenericArguments().Length - argsTaken;");
+            _builder.AppendLine("var args = genericArgs.Skip(argsTaken).Take(argsToTake);");
+            _builder.AppendLine("yield return Regex.Replace(type.Name, \"`\\\\d+$\", $\"<{string.Join(\", \", args.Select(x => PrettyTypeName(x)))}>\");");
+            _builder.AppendLine("argsTaken += argsToTake;");
+            _builder.CloseScope();
+
+            _builder.CloseScope();
+
+            _builder.OpenScope("return type switch");
             _builder.AppendLine("{ IsArray: true } => $\"{PrettyTypeName(type.GetElementType())}[]\",");
             _builder.AppendLine("{ IsPointer: true } => $\"{PrettyTypeName(type.GetElementType())}*\",");
             _builder.AppendLine("{ IsByRef: true } => $\"{PrettyTypeName(type.GetElementType())}&\",");
             _builder.AppendLine("_ when Nullable.GetUnderlyingType(type) is Type t => $\"{PrettyTypeName(t)}?\",");
-            _builder.AppendLine("{ IsGenericType: true } => $\"{type.Name.Remove(type.Name.IndexOf('`'))}<{string.Join(\", \", type.GenericTypeArguments.Select(x => PrettyTypeName(x)))}>\",");
-            _builder.AppendLine("_ => type.Name");
-
+            _builder.AppendLine("_ => string.Join(\".\", NestedTypes(type))");
             _builder.CloseScope(";");
+
+            _builder.CloseScope();
         }
 
         private void GeneratePrettyValueStringMethod()
@@ -158,22 +206,10 @@ namespace Accretion.Diagnostics.ExpressionLogger
             /*
             static string PrettyValueString(object value)
             {
-                static string PrettyDictionaryString(IDictionary dictionary)
-                {
-                    IEnumerable<string> Entries()
-                    {
-                        foreach (DictionaryEntry entry in dictionary)
-                        {
-                            yield return $"{PrettyValueString(entry.Key)}: {PrettyValueString(entry)}";
-                        }
-                    }
-
-                    return string.Join(", ", Entries());
-                }
                 static string PrettyEnumerableString(IEnumerable enumerable)
                 {
                     var sequence = enumerable.Cast<object>();
-                    return sequence.Any() ? "{ " + string.Join(", ", enumerable.Cast<object>().Select(x => PrettyValueString(x))) + " }" : "{ }";
+                    return sequence.Any() ? "{ " + string.Join(", ", sequence.Select(x => PrettyValueString(x))) + " }" : "{ }";
                 }
                 
                 return value switch
@@ -181,8 +217,10 @@ namespace Accretion.Diagnostics.ExpressionLogger
                     null => "null",
                     char ch => $"'{ch}'",
                     string s => $@"""{s}""",
+                    object kv when kv.GetType() is { IsGenericType: true, IsValueType: true } type &&
+                                   type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>) =>
+                                 $"{PrettyValueString(type.GetProperty("Key").GetValue(kv))}: {PrettyValueString(type.GetProperty("Value").GetValue(kv))}",
                     //Type type => PrettyTypeName(type),
-                    IDictionary dictionary => PrettyDictionaryString(dictionary),
                     IEnumerable enumerable => PrettyEnumerableString(enumerable),
                     //_ when value.ToString() == value.GetType().FullName => PrettyTypeName(value.GetType()),
                     _ => value.ToString()
@@ -199,21 +237,12 @@ namespace Accretion.Diagnostics.ExpressionLogger
             _builder.AppendLine("\"{ }\";");
             _builder.CloseScope();
 
-            _builder.OpenScope("static string PrettyDictionaryString(IDictionary dictionary)");
-            _builder.OpenScope("IEnumerable<string> Entries()");
-            _builder.OpenScope("foreach (DictionaryEntry entry in dictionary)");
-            _builder.AppendLine("yield return $\"{PrettyValueString(entry.Key)}: {PrettyValueString(entry.Value)}\";");
-            _builder.CloseScope();
-            _builder.CloseScope();
-            _builder.AppendLine("return PrettyEnumerableString(Entries(), true);");
-            _builder.CloseScope();
-
             _builder.OpenScope("return value switch");
             _builder.AppendLine("null => \"null\",");
             _builder.AppendLine("char ch => $\"'{ch}'\",");
             _builder.AppendLine("string s => $@\"\"\"{s}\"\"\",");
+            _builder.AppendLine("object kv when kv.GetType() is { IsGenericType: true, IsValueType: true } type && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>) => $\"{PrettyValueString(type.GetProperty(\"Key\").GetValue(kv))}: {PrettyValueString(type.GetProperty(\"Value\").GetValue(kv))}\",");
             _builder.AppendLine($"Type type => {PrettyTypeNameMethodName}(type),");
-            _builder.AppendLine("IDictionary dictionary => PrettyDictionaryString(dictionary),");
             _builder.AppendLine("IEnumerable enumerable => PrettyEnumerableString(enumerable),");
             _builder.AppendLine($"_ when value.ToString() == value.GetType().ToString() => {PrettyTypeNameMethodName}(value.GetType()),");
             _builder.AppendLine("_ => value.ToString()");

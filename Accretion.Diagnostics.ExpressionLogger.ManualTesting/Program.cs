@@ -43,6 +43,16 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             Generic<int[]>.Get().Log();
 
             await Methods.AsyncWait().Log();
+            typeof(int).Log();
+            typeof(List<int>).Log();
+            typeof(List<int>.Enumerator).Log();
+            typeof(Generic<int>.NestedNoNGeneric).Log();
+            typeof(Generic<int>.NestedGeneric<double>).Log();
+            typeof(Generic<int>.NestedGenericDouble<double, float>).Log();
+            typeof(Generic<int>.NestedNoNGeneric.NestedNestedNonGeneric).Log();
+            typeof(Generic<int>.NestedGenericDouble<double, float>.NestedNestedNoNGeneric).Log();
+            typeof(Generic<int>.NestedGenericDouble<double, float>.NestedNestedGeneric<short>).Log();
+            typeof(Generic<Generic<Generic<int>.NestedGeneric<double>>>.NestedGenericDouble<Generic<double>.NestedNoNGeneric, Generic<float>.NestedGenericDouble<byte, sbyte>.NestedNestedGeneric<int>>.NestedNestedGeneric<bool>).Log();
         }
 
         public static bool IsEmpty(Array array)
@@ -51,8 +61,8 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             return array.Length > 0;
         }
     }
-
-    public static class Generic<T>
+    
+    public class Generic<T>
     {
         public static T Get() => default;
 
@@ -61,6 +71,19 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             default(IEnumerable<Z>).Log();
             default(Z[]).Log();
             return default(Z).Log();
+        }
+
+        public struct NestedNoNGeneric
+        {
+            public struct NestedNestedNonGeneric { }
+        }
+
+        public struct NestedGeneric<U> { }
+        
+        public struct NestedGenericDouble<Z, R> 
+        {
+            public struct NestedNestedNoNGeneric { }
+            public struct NestedNestedGeneric<P> { }
         }
     }
 
