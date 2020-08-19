@@ -1,4 +1,5 @@
-﻿using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
+﻿using System;
+using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
 
 namespace Accretion.Diagnostics.ExpressionLogger
 {
@@ -9,14 +10,17 @@ namespace Accretion.Diagnostics.ExpressionLogger
             GeneratePrettyTypeNameMethod(builder);
             GeneratePrettyValueStringMethod(builder);
 
-            builder.OpenScope("void LogToConsole(string expressionDefinition)");
+            builder.OpenScope("void LogToConsole(string expressionDefinition, int column)");
 
             builder.AppendLine("var color = Console.ForegroundColor;");
             builder.AppendLine("Console.ForegroundColor = ConsoleColor.DarkGray;");
-            builder.AppendLine($"Console.Write($\"[{{Path.GetFileName({FilePathParameterName})}}:{{{LineNumberParameterName}}} ({{{MemberNameParameterName}}})] \");");
-
+            builder.AppendLine($"var location = $\"[{{Path.GetFileName({FilePathParameterName})}}:{{{LineNumberParameterName}}} ({{{MemberNameParameterName}}})] \";");
+            builder.AppendLine($"Console.Write(location);");
+            
             builder.AppendLine("Console.ForegroundColor = ConsoleColor.Cyan;");
-            builder.AppendLine($"Console.Write(expressionDefinition);");
+            builder.AppendLine("var originalAlignment = new string(' ', column);");
+            builder.AppendLine("var adjustedAlignment = new string(' ', location.Length);");
+            builder.AppendLine($"Console.Write(expressionDefinition.Replace(Environment.NewLine + originalAlignment, Environment.NewLine + adjustedAlignment));");
 
             builder.AppendLine("Console.ForegroundColor = ConsoleColor.White;");
             builder.AppendLine("Console.Write(\" = \");");

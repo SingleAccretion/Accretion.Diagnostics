@@ -68,7 +68,8 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
                         Log();
 
             ExpressionLogger.Log(
-                ExpressionLogger.Log(1));
+                ExpressionLogger.Log(
+                    ExpressionLogger.Log(1)));
         }
 
         public static bool IsEmpty(Array array)

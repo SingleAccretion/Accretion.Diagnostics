@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
-using System.Linq;
 using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
 
 namespace Accretion.Diagnostics.ExpressionLogger
@@ -26,8 +25,8 @@ namespace Accretion.Diagnostics.ExpressionLogger
         public void GenerateLogMethodBody()
         {
             AuxillariesGenerator.GenerateLogToConsoleMethod(_builder);
-
-            _lastUsagesCluster = new LogUsagesCluster(new LogUsage());
+            
+            _lastUsagesCluster = new LogUsagesCluster(LogUsage.DummyUsage);
             _builder.OpenScope($"switch (({LineNumberParameterName}, {FilePathParameterName}))");
             foreach (var tree in _compilation.SyntaxTrees)
             {
@@ -111,12 +110,15 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         private void GenerateEnqueuedLogCases()
         {
+            void GenerateLogToConsoleCall(LogUsage usage) =>
+                _builder.AppendLine($"LogToConsole({usage.Expression.AsLiteral()}, {usage.Location.GetLineSpan().StartLinePosition.Character});");
+
             var usages = _lastUsagesCluster.Usages;
 
             _builder.AppendLine($"case ({_lastUsagesCluster.LineNumber}, {_lastUsagesCluster.FilePath.AsLiteral()}):");
             if (usages.Count == 1)
             {
-                _builder.AppendLine($"LogToConsole({usages[0].Expression.AsLiteral()});");
+                GenerateLogToConsoleCall(usages[0]);
             }
             else
             {
@@ -124,7 +126,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
                 {
                     var usage = usages[i];
                     _builder.OpenScope($"if (typeof({usage.Type}) == typeof(T))");
-                    _builder.AppendLine($"LogToConsole({usage.Expression.AsLiteral()});");
+                    GenerateLogToConsoleCall(usage);
                     _builder.AppendLine("break;");
                     _builder.CloseScope();
                 }

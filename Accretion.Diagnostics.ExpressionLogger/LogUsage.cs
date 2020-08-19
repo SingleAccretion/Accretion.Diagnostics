@@ -1,10 +1,14 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 using System.IO;
 
 namespace Accretion.Diagnostics.ExpressionLogger
 {
     internal readonly struct LogUsage
     {
+        public static readonly LogUsage DummyUsage =
+            new LogUsage("", null, Location.Create("", new TextSpan(0, 0), new LinePositionSpan(new LinePosition(0, 0), new LinePosition(0, 0))), false);
+
         public LogUsage(string expressionDefinition, ITypeSymbol type, Location location, bool isPrefixedInvocation)
         {
             var span = location.GetLineSpan();
