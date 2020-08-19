@@ -3,9 +3,9 @@ using System.IO;
 
 namespace Accretion.Diagnostics.ExpressionLogger
 {
-    internal readonly struct LogMethodUsage
+    internal readonly struct LogUsage
     {
-        public LogMethodUsage(string expressionDefinition, ITypeSymbol type, Location location, bool isPrefixedInvocation)
+        public LogUsage(string expressionDefinition, ITypeSymbol type, Location location, bool isPrefixedInvocation)
         {
             var span = location.GetLineSpan();
             FilePath = span.Path;
@@ -23,11 +23,11 @@ namespace Accretion.Diagnostics.ExpressionLogger
         public string Expression { get; }
         public Location Location { get; }
 
-        public bool IsIndistinguishableFrom(LogMethodUsage other) =>
+        public bool IsIndistinguishableFrom(LogUsage other) =>
             FilePath == other.FilePath && LineNumber == other.LineNumber &&
            (Type.Kind == SymbolKind.TypeParameter || other.Type.Kind == SymbolKind.TypeParameter || SymbolEqualityComparer.Default.Equals(Type, other.Type));
 
-        public bool IsOnTheSameLineAs(LogMethodUsage other) => FilePath == other.FilePath && LineNumber == other.LineNumber;
+        public bool IsOnTheSameLineAs(LogUsage other) => FilePath == other.FilePath && LineNumber == other.LineNumber;
 
         public override string ToString() => $"{Path.GetFileName(FilePath)}:{LineNumber} - {Expression}";
     }

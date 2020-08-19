@@ -43,7 +43,6 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 
             Generic<int[]>.Get().Log();
 
-            await Methods.AsyncWait().Log();
             typeof(int).Log();
             typeof(List<int>).Log();
             typeof(List<int>.Enumerator).Log();
@@ -60,6 +59,9 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 
             ExpressionLogger.Log(new[] { 4, 5, 6 }.
                 Select(x => 2 * x));
+
+            await Methods.AsyncWait().Log();
+
         }
 
         public static bool IsEmpty(Array array)
