@@ -27,6 +27,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
         {
             AuxillariesGenerator.GenerateLogToConsoleMethod(_builder);
 
+            _lastUsagesCluster = new LogUsagesCluster(new LogUsage());
             _builder.OpenScope($"switch (({LineNumberParameterName}, {FilePathParameterName}))");
             foreach (var tree in _compilation.SyntaxTrees)
             {
@@ -35,7 +36,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
             }
             GenerateEnqueuedLogCases();
             _builder.CloseScope();
-            
+
             _builder.AppendLine($"return {ExpressionParameterName};");
         }
 
@@ -66,14 +67,9 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
             return "This invocation form is not supported by the ExpressionLogger. Please log an issue on github.com/SingleAccretion/Accretion.Diagnostics.";
         }
-        
+
         private void ExtractLogUsageFromInvocation(InvocationExpressionSyntax invocation)
         {
-            if (!invocation.ToString().Contains(LogMethodName))
-            {
-                return;
-            }
-
             var symbolInfo = _semanticModel.GetSymbolInfo(invocation);
 
             if (symbolInfo.Symbol is IMethodSymbol method &&
@@ -115,12 +111,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         private void GenerateEnqueuedLogCases()
         {
-            var usages = _lastUsagesCluster?.Usages;
-
-            if (usages is null || !usages.Any())
-            {
-                return;
-            }
+            var usages = _lastUsagesCluster.Usages;
 
             _builder.AppendLine($"case ({_lastUsagesCluster.LineNumber}, {_lastUsagesCluster.FilePath.AsLiteral()}):");
             if (usages.Count == 1)

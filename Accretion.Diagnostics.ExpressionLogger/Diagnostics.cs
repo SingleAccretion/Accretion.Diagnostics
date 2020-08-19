@@ -6,8 +6,8 @@ namespace Accretion.Diagnostics.ExpressionLogger
     {
         private static readonly DiagnosticDescriptor _duplicateLogUsageDescriptor = new DiagnosticDescriptor(
             "ACR000",
-            "The expression will not be logged - consider moving it to a separate line.",
-            "The expression will not be logged - consider moving it to a separate line.",
+            "The expression will not be logged correctly - consider moving it to a separate line.",
+            "The expression will not be logged correctly - consider moving it to a separate line.",
             category: "Usage",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);

@@ -62,6 +62,13 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 
             await Methods.AsyncWait().Log();
 
+            new object().
+                Log().
+                    Log().
+                        Log();
+
+            ExpressionLogger.Log(
+                ExpressionLogger.Log(1));
         }
 
         public static bool IsEmpty(Array array)
