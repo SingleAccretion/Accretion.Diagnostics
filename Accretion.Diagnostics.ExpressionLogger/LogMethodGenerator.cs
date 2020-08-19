@@ -13,7 +13,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
         private readonly Compilation _compilation;
         private readonly CodeBuilder _builder;
 
-        private LogUsagesCluster _usagesCluster;
+        private LogUsagesCluster _lastUsagesCluster;
         private SemanticModel _semanticModel;
 
         public LogMethodGenerator(Action<Diagnostic> reportDiagnostic, Compilation compilation, CodeBuilder builder)
@@ -90,11 +90,11 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         private void QueueLogCaseGeneration(LogUsage usage)
         {
-            var usages = _usagesCluster;
+            var usages = _lastUsagesCluster;
 
             if (usages is null)
             {
-                _usagesCluster = new LogUsagesCluster(usage);
+                _lastUsagesCluster = new LogUsagesCluster(usage);
             }
             else if (usages.AreOnTheSameLineAs(usage))
             {
@@ -115,14 +115,14 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         private void GenerateEnqueuedLogCases()
         {
-            var usages = _usagesCluster?.Usages;
+            var usages = _lastUsagesCluster?.Usages;
 
             if (usages is null || !usages.Any())
             {
                 return;
             }
 
-            _builder.AppendLine($"case ({_usagesCluster.LineNumber}, {_usagesCluster.FilePath.AsLiteral()}):");
+            _builder.AppendLine($"case ({_lastUsagesCluster.LineNumber}, {_lastUsagesCluster.FilePath.AsLiteral()}):");
             if (usages.Count == 1)
             {
                 _builder.AppendLine($"LogToConsole({usages[0].Expression.AsLiteral()});");
