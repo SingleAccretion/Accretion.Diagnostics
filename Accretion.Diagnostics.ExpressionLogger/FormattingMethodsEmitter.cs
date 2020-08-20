@@ -1,14 +1,13 @@
-﻿using System;
-using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
+﻿using static Accretion.Diagnostics.ExpressionLogger.Identifiers;
 
 namespace Accretion.Diagnostics.ExpressionLogger
 {
-    internal static class AuxillariesGenerator
+    internal static class FormattingMethodsEmitter
     {
-        public static void GenerateLogToConsoleMethod(CodeBuilder builder)
+        public static void EmitLogToConsoleMethod(CodeBuilder builder)
         {
-            GeneratePrettyTypeNameMethod(builder);
-            GeneratePrettyValueStringMethod(builder);
+            EmitPrettyTypeNameMethod(builder);
+            EmitPrettyValueStringMethod(builder);
 
             builder.OpenScope("void LogToConsole(string expressionDefinition, int column)");
 
@@ -48,7 +47,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
             builder.CloseScope();
         }
 
-        public static void GeneratePrettyTypeNameMethod(CodeBuilder builder)
+        private static void EmitPrettyTypeNameMethod(CodeBuilder builder)
         {
             /*
             static string PrettyTypeName(Type type)
@@ -121,8 +120,8 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
             builder.CloseScope();
         }
-
-        public static void GeneratePrettyValueStringMethod(CodeBuilder builder)
+        
+        private static void EmitPrettyValueStringMethod(CodeBuilder builder)
         {
             /*
             static string PrettyValueString(object value)

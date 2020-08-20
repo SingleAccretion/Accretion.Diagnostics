@@ -1,12 +1,11 @@
-﻿using System.Text;
+﻿using Microsoft.CodeAnalysis.Text;
+using System.Text;
 
 namespace Accretion.Diagnostics.ExpressionLogger
 {
-    internal struct CodeBuilder
+    internal class CodeBuilder
     {
-        private StringBuilder _builder;
-
-        private StringBuilder Builder => _builder ??= new StringBuilder();
+        private readonly StringBuilder _builder = new StringBuilder();
 
         public void OpenScope(string header)
         {
@@ -21,10 +20,12 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         public void AppendLine(string line)
         {
-            Builder.AppendLine();
-            Builder.Append(line);
+            _builder.AppendLine();
+            _builder.Append(line);
         }
 
-        public override string ToString() => Builder.ToString();
+        public override string ToString() => _builder.ToString();
+
+        public SourceText ToSourceText() => SourceText.From(ToString(), Encoding.UTF8);
     }
 }

@@ -5,6 +5,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
     internal static class Identifiers
     {
         public const string LogMethodName = "Log";
+        public const string FullLogMethodName = "Log<T>";
         public const string ExpressionLoggerClassName = "ExpressionLogger";
         public const string ExpressionLoggerClassNamespace = "Accretion.Diagnostics.ExpressionLogger";
         public const string FullyQualifiedLogMethodName = ExpressionLoggerClassNamespace + "." + ExpressionLoggerClassName + "." + LogMethodName;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
@@ -67,9 +68,26 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
                     Log().
                         Log();
 
+            new IntPtr().
+                Log().
+                Log().
+                Log();
+
             ExpressionLogger.Log(
                 ExpressionLogger.Log(
                     ExpressionLogger.Log(1)));
+            
+            //Example of a "generic name"
+            "string".Log<object>();
+            
+            //Example of unloggable expressions
+            20.Log().Log().Log();
+
+            //Example where identifier is positioned not on the same line as the argument list
+            new object().Log
+                (
+
+                );
         }
 
         public static bool IsEmpty(Array array)
@@ -107,5 +125,11 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
     public static class Methods
     {
         public static Task<int> AsyncWait() => Task.FromResult(50);
+
+        public static T LogThis<T>(this T s, [CallerLineNumber] int i = 0)
+        {
+            Console.WriteLine(i);
+            return s;
+        }
     }
 }

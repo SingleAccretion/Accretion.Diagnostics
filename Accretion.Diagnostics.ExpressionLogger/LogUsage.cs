@@ -1,37 +1,33 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Accretion.Diagnostics.ExpressionLogger
 {
+    [StructLayout(LayoutKind.Auto)]
     internal readonly struct LogUsage
     {
-        public static readonly LogUsage DummyUsage =
-            new LogUsage("", null, Location.Create("", new TextSpan(0, 0), new LinePositionSpan(new LinePosition(0, 0), new LinePosition(0, 0))), false);
+        private static readonly Location _dummyLocation = Location.Create("", default, default);
+        public static readonly LogUsage DummyUsage = new LogUsage("", 0, _dummyLocation, _dummyLocation, null!);
 
-        public LogUsage(string expressionDefinition, ITypeSymbol type, Location location, bool isPrefixedInvocation)
+        public LogUsage(string expressionDefinition, int lineNumber, Location logLocation, Location expressionLocation, ITypeSymbol type)
         {
-            var span = location.GetLineSpan();
-            FilePath = span.Path;
-            LineNumber = (isPrefixedInvocation ? span.StartLinePosition.Line : span.EndLinePosition.Line) + 1;
+            var lineSpan = logLocation.GetLineSpan();
+            FilePath = lineSpan.Path;
+            LineNumber = lineNumber;
             Type = type;
-
             Expression = expressionDefinition;
-            Location = location;
+            LogLocation = logLocation;
+            ExpressionLocation = expressionLocation;
         }
 
         public string FilePath { get; }
         public int LineNumber { get; }
         public ITypeSymbol Type { get; }
-
         public string Expression { get; }
-        public Location Location { get; }
 
-        public bool IsIndistinguishableFrom(LogUsage other) =>
-            FilePath == other.FilePath && LineNumber == other.LineNumber &&
-           (Type.Kind == SymbolKind.TypeParameter || other.Type.Kind == SymbolKind.TypeParameter || SymbolEqualityComparer.Default.Equals(Type, other.Type));
-
-        public bool IsOnTheSameLineAs(LogUsage other) => FilePath == other.FilePath && LineNumber == other.LineNumber;
+        public Location LogLocation { get; }
+        public Location ExpressionLocation { get; }
 
         public override string ToString() => $"{Path.GetFileName(FilePath)}:{LineNumber} - {Expression}";
     }
