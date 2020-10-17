@@ -81,7 +81,7 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             "string".Log<object>();
             
             //Example of unloggable expressions
-            20.Log().Log().Log();
+            //20.Log().Log().Log();
 
             //Example where identifier is positioned not on the same line as the argument list
             new object().Log

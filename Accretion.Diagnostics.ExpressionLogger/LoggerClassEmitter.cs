@@ -11,7 +11,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
     [Generator]
     public class LoggerClassEmitter : ISourceGenerator
     {
-        public void Execute(SourceGeneratorContext context)
+        public void Execute(GeneratorExecutionContext context)
         {
             var collector = (LogUsagesCollector)context.SyntaxReceiver!;
             var builder = new CodeBuilder();
@@ -23,7 +23,7 @@ namespace Accretion.Diagnostics.ExpressionLogger
             context.AddSource("ExpressionLogger.cs", builder.ToSourceText());
         }
 
-        public void Initialize(InitializationContext context)
+        public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new LogUsagesCollector());
             //Debugger.Launch();
@@ -38,11 +38,11 @@ namespace Accretion.Diagnostics.ExpressionLogger
             EmitExpressionLoggerClassSource(builder);
 
             var source = builder.ToSourceText();
-            var syntaxTree = SyntaxFactory.ParseSyntaxTree(source, parsingOptions, isGeneratedCode: true);
+            var syntaxTree = SyntaxFactory.ParseSyntaxTree(source, parsingOptions);
             var compilation = originalCompilation.AddSyntaxTrees(syntaxTree);
             logMethodDefinition = (IMethodSymbol)compilation.GetSemanticModel(syntaxTree).
                 GetDeclaredSymbol(syntaxTree.GetRoot().DescendantNodes().
-                    First(x => x is MethodDeclarationSyntax method && method.Identifier.ToString() == LogMethodName));
+                    First(x => x is MethodDeclarationSyntax method && method.Identifier.ToString() == LogMethodName))!;
 
             return compilation;
         }

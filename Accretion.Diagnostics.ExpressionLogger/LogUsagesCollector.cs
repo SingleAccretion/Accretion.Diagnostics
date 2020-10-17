@@ -63,9 +63,11 @@ namespace Accretion.Diagnostics.ExpressionLogger
 
         private IEnumerable<LogUsage> CollectAllUsages(Compilation compilation, IMethodSymbol logMethodDefinition)
         {
+            var semanticModels = compilation.SyntaxTrees.ToDictionary(x => x, x => compilation.GetSemanticModel(x));
             foreach (var invocation in _invocations)
             {
-                var semanticModel = compilation.GetSemanticModel(invocation.SyntaxTree);
+                var semanticModel = semanticModels[invocation.SyntaxTree];
+
                 var symbolInfo = semanticModel.GetSymbolInfo(invocation);
                 var symbol = symbolInfo.Symbol;
 
