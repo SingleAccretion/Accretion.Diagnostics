@@ -2,4 +2,4 @@
 
 A recreaction of Rust's `dbg` macro that uses Roslyn's source generators.
 
-![Demo](/.github/Images/ExpressionLoggerDemo.png)
+<img src="/.github/Images/ExpressionLoggerDemo.png" width="832" height="382" />

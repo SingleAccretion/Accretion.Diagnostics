@@ -8,30 +8,28 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
 {
     public class Program
     {
-        public static async Task Main()
+        public static async Task Main() => await Test();
+
+        public static async Task Test()
         {
+            static bool IsEmpty(Array array) => (array.Length > 0).Log();
+
             ExpressionLogger.Log(new Action(() => Console.WriteLine(10)));
-
             IsEmpty(new int[] { });
-
             new List<int>().Log(); new List<double>().Log();
-
             new Func<IEnumerable<IReadOnlyCollection<object>>>(() => default).Log();
             new Dictionary<ValueTask<int>[], KeyValuePair<List<List<int>[]>, double>>().Log();
-
             2.Log(); 2.0f.Log(); 3.0.Log();
             new object().Log();
             new int?(10).Log();
-
             new int[] { 1, 2, 3 }.Log();
             new int?[] { 1, 2, 3 }.Log();
             new int?[] { 1, 2, 3 }.Log();
             new char[] { 'h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd' }.Log();
             new string[] { "hello", "world" }.Log();
             new Dictionary<int, string> { { 1, "1" }, { 2, "2" }, { 3, "3" } }.Log();
-
-            object kek = null;
-            kek.Log();
+            object obj = null;
+            obj.Log();
 
             ConsoleColor.Red.ToString()?.Log();
             ConsoleColor.Black.ToString().Log();
@@ -76,10 +74,10 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
             ExpressionLogger.Log(
                 ExpressionLogger.Log(
                     ExpressionLogger.Log(1)));
-            
+
             //Example of a "generic name"
             "string".Log<object>();
-            
+
             //Example of unloggable expressions
             //20.Log().Log().Log();
 
@@ -88,12 +86,6 @@ namespace Accretion.Diagnostics.ExpressionLogger.ManualTesting
                 (
 
                 );
-        }
-
-        public static bool IsEmpty(Array array)
-        {
-            (array.Length > 0).Log();
-            return array.Length > 0;
         }
     }
 
